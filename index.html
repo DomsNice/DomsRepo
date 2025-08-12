@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IoT Device Control - Multiple Devices</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"
+        type="text/javascript"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>IoT Device Controller</h1>
+
+        <!-- <div id="alert-box" style="display: none;">
+            <h2>Alert Title</h2>
+            <p id="alertMessage"></p>
+        </div> -->
+
+        <div id="devices">
+            <!-- Device 1 -->
+            <div class="device-box" data-device="Device 1">
+                <h2>DEVICE 1</h2>
+                <div class="indicator" id="indicator-light"></div>
+                <p class="status">Device is OFF</p>
+                <button class="toggle-button">Turn ON</button>
+            </div>
+
+            <!-- Device 2 -->
+            <div class="device-box" data-device="Device 2">
+                <h2>DEVICE 2</h2>
+                <div class="indicator" id="indicator-fan"></div>
+                <p class="status">Device is OFF</p>
+                <button class="toggle-button">Turn ON</button>
+            </div>
+
+            <!-- Device 3 -->
+            <div class="device-box" data-device="Device 3">
+                <h2>DEVICE 3</h2>
+                <div class="indicator" id="indicator-pump"></div>
+                <p class="status">Device is OFF</p>
+                <button class="toggle-button">Turn ON</button>
+            </div>
+        </div>
+        <div id="notification" class="notification hidden"></div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
