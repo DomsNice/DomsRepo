@@ -1,6 +1,7 @@
 {
-    "ip": "10.192.191.227",
+    "ip": "10.192.191.100","ip2": "10.192.191.227","ip3": "10.192.191.219",
     "username": "idoul132456@gmail.com",
     "password": "092247651085jj",
-    "state": "Off"
+    "state": "Off","state2": "Off","state3": "Off"
+
 }
