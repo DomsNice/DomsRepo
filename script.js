@@ -16,97 +16,69 @@ document.addEventListener('DOMContentLoaded', () => {
         onFailure: (err) => console.error("Connection failed", err)
     });
 
-    // Listen for incoming messages
+    // Handle incoming messages
     client.onMessageArrived = function (message) {
-        const payload = JSON.parse(message.payloadString);
-        console.log("Received:", payload);
+        try {
+            const payload = JSON.parse(message.payloadString);
+            console.log("Received:", payload);
 
-        const deviceId = payload.deviceId;
-        const state = payload.state;
-
-        updateDeviceState(deviceId, state);
+            if (payload.deviceId && payload.state) {
+                updateDeviceState(payload.deviceId, payload.state, false); // false = don’t re-publish
+            }
+        } catch (e) {
+            console.error("Invalid message format", e);
+        }
     };
-
 
     function onConnect() {
         console.log("Connected!");
-        alert("Connected")
         client.subscribe("my/test/topic");
+        showNotification("✅ Connected to MQTT broker");
     }
 
-    function updateDeviceState(deviceId, state) {
+    function updateDeviceState(deviceId, state, shouldPublish = true) {
         const deviceBox = document.querySelector(`[data-device="${deviceId}"]`);
 
         if (deviceBox) {
             const indicator = deviceBox.querySelector('.indicator');
             const status = deviceBox.querySelector('.status');
+            const button = deviceBox.querySelector('.toggle-button');
 
-            // Update the device state visually
             if (state === 'On') {
                 indicator.classList.add('on');
                 status.textContent = 'Device is ON';
-            } else if (state === 'Off') {
+                button.textContent = 'Turn OFF';
+            } else {
                 indicator.classList.remove('on');
                 status.textContent = 'Device is OFF';
+                button.textContent = 'Turn ON';
+            }
+
+            // Only publish if change came from UI
+            if (shouldPublish) {
+                const mqtt_message = { deviceId, state };
+                client.send("my/test/topic", JSON.stringify(mqtt_message));
             }
         }
     }
 
-    // Function to update state for all devices
-    function updateAllDevicesState(state) {
-        // Find all devices (elements with data-device attribute)
-        const deviceBoxes = document.querySelectorAll('[data-device]');
-
-        deviceBoxes.forEach(deviceBox => {
-            const indicator = deviceBox.querySelector('.indicator');
-            const status = deviceBox.querySelector('.status');
-
-            // Update the state for each device based on the received payload
-            if (state === 'On') {
-                indicator.classList.add('on');
-                status.textContent = 'Device is ON';
-            } else {
-                indicator.classList.remove('on');
-                status.textContent = 'Device is OFF';
-            }
-        });
-    }
-
-    // Device button logic
+    // Handle button clicks
     const buttons = document.querySelectorAll('.toggle-button');
     const notification = document.getElementById('notification');
     let notificationTimeout;
 
     buttons.forEach(button => {
         button.addEventListener('click', () => {
-            const deviceBox = button.parentElement;
-            const indicator = deviceBox.querySelector('.indicator');
-            const status = deviceBox.querySelector('.status');
-            const deviceName = deviceBox.getAttribute('data-device');
-            const isOn = indicator.classList.contains('on');
-            const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            let message = '';
-            let mqtt_message = {};
+            const deviceBox = button.closest('.device-box');
+            const deviceId = deviceBox.getAttribute('data-device');
+            const isOn = deviceBox.querySelector('.indicator').classList.contains('on');
 
-            if (isOn) {
-                indicator.classList.remove('on');
-                status.textContent = 'Device is OFF';
-                button.textContent = 'Turn ON';
-                message = `${deviceName} is Off`;
-                mqtt_message = { "deviceId": deviceName, "state": "Off" };
-            } else {
-                indicator.classList.add('on');
-                status.textContent = 'Device is ON';
-                button.textContent = 'Turn OFF';
-                message = `${deviceName} is On`;
-                mqtt_message = { "deviceId": deviceName, "state": "On" };
-            }
+            const newState = isOn ? "Off" : "On";
+            updateDeviceState(deviceId, newState, true);
 
-            client.send("my/test/topic", JSON.stringify(mqtt_message)); // Send updated state to the topic
-            showNotification(message);
+            showNotification(`${deviceId} turned ${newState}`);
         });
     });
-
 
     function showNotification(message) {
         notification.textContent = message;
