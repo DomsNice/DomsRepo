@@ -111,3 +111,29 @@ h1 {
 .notification.hidden {
   display: none;
 }
+
+.add-device-wrapper {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.add-device-btn {
+  background-color: #28a745; /* green to differentiate */
+}
+
+.add-device-btn:hover {
+  background-color: #218838;
+}
+
+/* Fade-in animation for new devices */
+.device-box.fade-in {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.device-box.fade-in.show {
+  opacity: 1;
+  transform: scale(1);
+}

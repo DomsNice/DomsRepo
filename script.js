@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientID = "webclient_" + parseInt(Math.random() * 1000000, 10);
 
     const client = new Paho.Client(
-        "5c1e782f3c924391aecb3b50c3b6316d.s1.eu.hivemq.cloud",
+        "4f0992dbcdbb45729af2a31279d02983.s1.eu.hivemq.cloud",
         Number(8884),
         "/mqtt",
         clientID
@@ -16,14 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
         onFailure: (err) => console.error("Connection failed", err)
     });
 
-    // Handle incoming messages
     client.onMessageArrived = function (message) {
         try {
             const payload = JSON.parse(message.payloadString);
-            console.log("Received:", payload);
-
             if (payload.deviceId && payload.state) {
-                updateDeviceState(payload.deviceId, payload.state, false); // false = don’t re-publish
+                updateDeviceState(payload.deviceId, payload.state, false); 
+                saveDeviceState(payload.deviceId, payload.state); // persist state
             }
         } catch (e) {
             console.error("Invalid message format", e);
@@ -31,14 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function onConnect() {
-        console.log("Connected!");
         client.subscribe("my/test/topic");
         showNotification("✅ Connected to MQTT broker");
+
+        // Re-apply saved states after reconnect
+        const savedDevices = JSON.parse(localStorage.getItem('devices') || "[]");
+        savedDevices.forEach(d => {
+            updateDeviceState(d.deviceId, d.state, false);
+        });
     }
 
     function updateDeviceState(deviceId, state, shouldPublish = true) {
         const deviceBox = document.querySelector(`[data-device="${deviceId}"]`);
-
         if (deviceBox) {
             const indicator = deviceBox.querySelector('.indicator');
             const status = deviceBox.querySelector('.status');
@@ -54,32 +56,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.textContent = 'Turn ON';
             }
 
-            // Only publish if change came from UI
             if (shouldPublish) {
                 const mqtt_message = { deviceId, state };
                 client.send("my/test/topic", JSON.stringify(mqtt_message));
+                saveDeviceState(deviceId, state); // persist state change
             }
         }
     }
 
-    // Handle button clicks
-    const buttons = document.querySelectorAll('.toggle-button');
+    // Save device state to localStorage
+    function saveDeviceState(deviceId, state) {
+        let savedDevices = JSON.parse(localStorage.getItem('devices') || "[]");
+        const index = savedDevices.findIndex(d => d.deviceId === deviceId);
+        if (index >= 0) {
+            savedDevices[index].state = state;
+        } else {
+            savedDevices.push({ deviceId, state });
+        }
+        localStorage.setItem('devices', JSON.stringify(savedDevices));
+    }
+
+    // Notification
     const notification = document.getElementById('notification');
     let notificationTimeout;
-
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            const deviceBox = button.closest('.device-box');
-            const deviceId = deviceBox.getAttribute('data-device');
-            const isOn = deviceBox.querySelector('.indicator').classList.contains('on');
-
-            const newState = isOn ? "Off" : "On";
-            updateDeviceState(deviceId, newState, true);
-
-            showNotification(`${deviceId} turned ${newState}`);
-        });
-    });
-
     function showNotification(message) {
         notification.textContent = message;
         notification.classList.remove('hidden');
@@ -88,9 +87,69 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(notificationTimeout);
         notificationTimeout = setTimeout(() => {
             notification.classList.remove('show');
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 500);
+            setTimeout(() => notification.classList.add('hidden'), 500);
         }, 3000);
     }
+
+    // Attach toggle handler
+    function attachToggleHandler(button) {
+        button.addEventListener('click', () => {
+            const deviceBox = button.closest('.device-box');
+            const deviceId = deviceBox.getAttribute('data-device');
+            const isOn = deviceBox.querySelector('.indicator').classList.contains('on');
+            const newState = isOn ? "Off" : "On";
+            updateDeviceState(deviceId, newState, true);
+            showNotification(`${deviceId} turned ${newState}`);
+        });
+    }
+
+    // Attach to existing buttons
+    document.querySelectorAll('.toggle-button').forEach(attachToggleHandler);
+
+    // Add Device button
+    const addDeviceBtn = document.getElementById('addDeviceBtn');
+    let deviceCount = document.querySelectorAll('.device-box').length;
+
+    addDeviceBtn.addEventListener('click', () => {
+        deviceCount++;
+        const newDeviceId = `Device ${deviceCount}`;
+        createDeviceBox(newDeviceId, "Off", true);
+    });
+
+    // Create device (with fade-in + save option)
+    function createDeviceBox(deviceId, initialState, save = false) {
+        const devicesContainer = document.getElementById('devices');
+        const deviceBox = document.createElement('div');
+        deviceBox.classList.add('device-box', 'fade-in');
+        deviceBox.setAttribute('data-device', deviceId);
+        deviceBox.innerHTML = `
+            <h2>${deviceId.toUpperCase()}</h2>
+            <div class="indicator"></div>
+            <p class="status">Device is OFF</p>
+            <button class="toggle-button">Turn ON</button>
+        `;
+        devicesContainer.appendChild(deviceBox);
+
+        requestAnimationFrame(() => deviceBox.classList.add('show'));
+
+        const button = deviceBox.querySelector('.toggle-button');
+        attachToggleHandler(button);
+
+        // Apply initial state
+        updateDeviceState(deviceId, initialState, false);
+
+        if (save) {
+            saveDeviceState(deviceId, initialState);
+            showNotification(`${deviceId} added`);
+        }
+    }
+
+    // Restore devices + state from localStorage
+    const savedDevices = JSON.parse(localStorage.getItem('devices') || "[]");
+    savedDevices.forEach(d => {
+        if (!document.querySelector(`[data-device="${d.deviceId}"]`)) {
+            createDeviceBox(d.deviceId, d.state, false);
+            deviceCount++;
+        }
+    });
 });
