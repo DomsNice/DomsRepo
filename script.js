@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const client = new Paho.Client(
         "4f0992dbcdbb45729af2a31279d02983.s1.eu.hivemq.cloud",
-        Number(8884),
+        Number(8883),
         "/mqtt",
         clientID
     );
@@ -153,3 +153,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
