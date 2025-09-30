@@ -2,16 +2,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientID = "webclient_" + parseInt(Math.random() * 1000000, 10);
 
     const client = new Paho.Client(
-        "4f0992dbcdbb45729af2a31279d02983.s1.eu.hivemq.cloud",
-        Number(8883),
+        "ad13c9d3eb1a4c53b4c7cffe6d4e3fad.s1.eu.hivemq.cloud",
+        Number(8884),
         "/mqtt",
         clientID
     );
 
     client.connect({
         useSSL: true,
-        userName: "user1",
-        password: "User1234",
+        userName: "MQTTuser",
+        password: "MQ77u$er",
         onSuccess: onConnect,
         onFailure: (err) => console.error("Connection failed", err)
     });
@@ -153,4 +153,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
 
